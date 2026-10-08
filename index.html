@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>cropperjs: src set after connect</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; }
+    cropper-canvas { width: 400px; height: 400px; border: 1px solid #999; }
+    #result { font-family: monospace; white-space: pre; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <p>
+    cropperjs <b id="version"></b>.
+    Switch: <a href="?v=2.3.0">2.3.0</a> | <a href="?v=2.2.0">2.2.0</a>
+  </p>
+
+  <!-- Connected without a src. -->
+  <cropper-canvas>
+    <cropper-image alt="Picture" translatable scalable></cropper-image>
+  </cropper-canvas>
+
+  <p><button id="load">Set src</button></p>
+  <div id="result"></div>
+
+  <script>
+    const version = new URLSearchParams(location.search).get('v') || '2.3.0';
+    document.getElementById('version').textContent = version;
+
+    const script = document.createElement('script');
+    script.src = `https://cdn.jsdelivr.net/npm/cropperjs@${version}/dist/cropper.js`;
+    document.head.appendChild(script);
+
+    // An 800x600 test image, so the repro needs no asset.
+    function testImage() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 800;
+      canvas.height = 600;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#336699';
+      ctx.fillRect(0, 0, 800, 600);
+      ctx.fillStyle = '#33cc33';
+      ctx.fillRect(300, 200, 200, 200);
+      return canvas.toDataURL('image/png');
+    }
+
+    document.getElementById('load').addEventListener('click', () => {
+      const image = document.querySelector('cropper-image');
+      image.src = testImage();
+      image.$ready(() => {
+        requestAnimationFrame(() => {
+          const rect = image.getBoundingClientRect();
+          document.getElementById('result').textContent =
+            `$ready() resolved\n<cropper-image> size: ${Math.round(rect.width)} x ${Math.round(rect.height)}\n` +
+            (rect.width === 0 ? 'BUG: the image never took its size' : 'OK');
+        });
+      });
+    });
+  </script>
+</body>
+</html>
